@@ -2,6 +2,7 @@ import React from "react";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import axios from "axios";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -12,10 +13,29 @@ L.Icon.Default.mergeOptions({
 });
 
 function Map() {
-  const position = [51.505, -0.09];
+  let position = [30.79687513411045, 31.421163140657065];
+  let [markerPositions, setMarkerPositions] = React.useState([]);
+  React.useEffect(() => {
+    axios({
+      method: "GET",
+      url: "/shops/",
+    })
+      .then((response) => {
+        setMarkerPositions(response.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, [setMarkerPositions, markerPositions]);
 
   return (
     <div id="map" style={{ height: "700px" }}>
+      <pre>
+        <code>
+          {markerPositions && JSON.stringify(markerPositions, null, 4)}
+        </code>
+      </pre>
+
       <MapContainer
         center={position}
         zoom={13}
