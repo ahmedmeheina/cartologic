@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
@@ -13,47 +13,62 @@ L.Icon.Default.mergeOptions({
 });
 
 function Map() {
-  let position = [30.79687513411045, 31.421163140657065];
-  let [markerPositions, setMarkerPositions] = React.useState([]);
-  React.useEffect(() => {
-    axios({
-      method: "GET",
-      url: "/shops/",
-    })
-      .then((response) => {
-        setMarkerPositions(response.data);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  }, [setMarkerPositions, markerPositions]);
+  const [markers, setMarkers] = useState([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsDataLoaded(true);
+      const result = await axios("/shops/");
+
+      setMarkers(result.data);
+
+      setTimeout(() => {
+        setIsDataLoaded(false);
+      }, 2000);
+    };
+
+    fetchData();
+  }, [setMarkers]);
 
   return (
-    <div id="map" style={{ height: "700px" }}>
-      <pre>
-        <code>
-          {markerPositions && JSON.stringify(markerPositions, null, 4)}
-        </code>
-      </pre>
-
-      <MapContainer
-        center={position}
-        zoom={13}
-        scrollWheelZoom={false}
-        style={{ height: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Marker position={position}>
-          <Popup>
-            A pretty CSS3 popup. <br /> Easily customizable.
-          </Popup>
-        </Marker>
-      </MapContainer>
-    </div>
+    <React.Fragment>
+      {isDataLoaded ? (
+        <p>Loading ...</p>
+      ) : (
+        <div id="map" style={{ height: "700px" }}>
+          <MapContainer
+            center={getPoint(markers[0])}
+            zoom={13}
+            scrollWheelZoom={true}
+            style={{ height: "100%" }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {markers.map((item, index) => (
+              <Marker position={getPoint(item)} key={index}>
+                <Popup>
+                  {item.title} <br /> {item.description}
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
+      )}
+    </React.Fragment>
   );
+}
+
+function getPoint(pointString) {
+  console.log(pointString);
+  let point = [50, 50];
+  if (pointString && pointString.location) {
+    const regExp = /\(([^)]+)\)/;
+    point = regExp.exec(pointString.location)[1].split(" ");
+  }
+  return point;
 }
 
 export default Map;
